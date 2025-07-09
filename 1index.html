@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nordic Threads | Минимализм в каждой детали</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+    .chatbot.collapsed {
+        height: 48px !important;
+        min-height: 0 !important;
+        max-height: 48px !important;
+        overflow: hidden !important;
+        transition: height 0.2s;
+    }
+    .chatbot {
+        transition: height 0.2s;
+    }
+    /* --- Чат-бот: анимация и позиционирование в правом нижнем углу --- */
+    #chatbot-widget {
+        /* Отключаем фиксированное позиционирование для размещения в nav */
+        position: static !important;
+        right: auto !important;
+        bottom: auto !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+        box-shadow: none !important;
+        width: auto !important;
+        height: auto !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        max-width: none !important;
+        max-height: none !important;
+        background: none !important;
+        border-radius: 50% !important;
+        z-index: auto !important;
+        display: inline-flex !important;
+        align-items: center;
+    }
+    #chatbot-widget .chatbot-popup {
+        display: none;
+    }
+    #chatbot-widget.open .chatbot-popup {
+        display: flex !important;
+    }
+    #chatbot-widget.closed .chatbot-popup {
+        display: none !important;
+    }
+    /* --- Остальные стили --- */
+
+    /* Отступы между кнопками навигации */
+    .nav-links a {
+        margin-right: 22px;
+        text-decoration: none;
+    }
+    .nav-links a:last-child {
+        margin-right: 0;
+    }
+
+    /* Красивое окно чат-бота */
+    .chatbot-popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        right: 32px;
+        left: auto;
+        z-index: 1001;
+        width: 340px;
+        max-width: 95vw;
+        height: 410px;
+        min-height: 320px;
+        max-height: calc(100vh - 60px);
+        background: #fff;
+        border-radius: 16px 16px 16px 16px;
+        box-shadow: 0 8px 32px rgba(44,62,80,0.18), 0 1.5px 8px rgba(44,62,80,0.10);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid #e6e8ec;
+        animation: chatbot-popup-fadein 0.22s cubic-bezier(.4,0,.2,1);
+        transform: translateY(-50%);
+    }
+    @keyframes chatbot-popup-fadein {
+        from { opacity: 0; transform: translateY(20px) scale(0.98);}
+        to   { opacity: 1; transform: translateY(0) scale(1);}
+    }
+    .chatbot-header {
+        background: linear-gradient(90deg, #2b5876 0%, #4e4376 100%);
+        color: #fff !important;
+        border-radius: 16px 16px 0 0 !important;
+        min-height: 38px !important;
+        height: 38px !important;
+        font-size: 15px;
+        font-weight: 600;
+        padding: 8px 16px !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 1px 6px rgba(44,62,80,0.07);
+    }
+    .chatbot-title {
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.01em;
+    }
+    .chatbot-toggle {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 20px;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.18s;
+    }
+    .chatbot-toggle:hover {
+        background: rgba(255,255,255,0.13);
+    }
+    .chatbot-messages {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 12px 12px 0 12px !important;
+        font-size: 14px;
+        background: #f8fafd;
+    }
+    .chatbot-messages .message {
+        margin-bottom: 10px;
+        background: #f2f2f2;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 90%;
+        word-break: break-word;
+    }
+    .chatbot-messages .bot-message {
+        background: #e6e8ec;
+        color: #222;
+        align-self: flex-start;
+    }
+    .chatbot-messages .user-message {
+        background: #dbeafe;
+        color: #1e293b;
+        align-self: flex-end;
+    }
+    .chatbot-input {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        flex-shrink: 0;
+        background: #f8fafd;
+        border-top: 1px solid #e6e8ec;
+    }
+    .chatbot-input input[type="text"] {
+        flex: 1;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        font-size: 14px;
+        background: #fff;
+        transition: border 0.18s;
+    }
+    .chatbot-input input[type="text"]:focus {
+        border: 1.5px solid #4e4376;
+        outline: none;
+        background: #f3f4f6;
+    }
+    .chatbot-input button {
+        padding: 8px 14px;
+        background: linear-gradient(90deg, #2b5876 0%, #4e4376 100%);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background 0.18s, box-shadow 0.18s;
+        box-shadow: 0 1px 4px rgba(44,62,80,0.08);
+    }
+    .chatbot-input button:hover {
+        background: linear-gradient(90deg, #4e4376 0%, #2b5876 100%);
+    }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">NORDIC THREADS</div>
+            <div class="nav-links" style="display:flex;align-items:center;gap:0;">
+                <a href="#men">Мужское</a>
+                <a href="#women">Женское</a>
+                <a href="#new">Новинки</a>
+                <a href="#about">О бренде</a>
+                <!-- Чат-бот рядом с "О бренде" -->
+                <span id="chatbot-nav-container" style="display:inline-flex;align-items:center;margin-left:10px;">
+                    <div class="chatbot closed" id="chatbot-widget" style="position:static;right:auto;bottom:auto;top:auto;left:auto;box-shadow:none;width:auto;height:auto;min-width:0;min-height:0;max-width:none;max-height:none;background:none;border-radius:50%;z-index:auto;">
+                        <button class="chatbot-fab" id="chatbot-fab" title="Открыть чат-бота" aria-label="Открыть чат-бота"
+                            style="display:flex;align-items:center;justify-content:center;width:auto;height:auto;background:transparent;border:none;border-radius:50%;cursor:pointer;position:static;top:auto;right:auto;transition:background 0.2s,box-shadow 0.2s,transform 0.18s;padding:0 6px;">
+                            <span style="display:flex;align-items:center;justify-content:center;">
+                                <!-- Новая иконка: минималистичный круглый чат (speech bubble) -->
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M3.5 10C3.5 6.96243 6.18629 4.5 10 4.5C13.8137 4.5 16.5 6.96243 16.5 10C16.5 13.0376 13.8137 15.5 10 15.5C9.23213 15.5 8.49513 15.3932 7.8125 15.2L5 16.5L5.5 13.5C4.27338 12.5955 3.5 11.3676 3.5 10Z" stroke="#2b5876" stroke-width="1.5" fill="#fff"/>
+                                    <circle cx="7.5" cy="10" r="1" fill="#2b5876"/>
+                                    <circle cx="10" cy="10" r="1" fill="#2b5876"/>
+                                    <circle cx="12.5" cy="10" r="1" fill="#2b5876"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div class="chatbot-popup">
+                            <div class="chatbot-header" id="chatbot-header">
+                                <div class="chatbot-title">Чат-бот консультант</div>
+                                <button class="chatbot-toggle" id="chatbot-toggle-btn">×</button>
+                            </div>
+                            <div class="chatbot-messages" id="chatbot-messages">
+                                <div class="message bot-message">Здравствуйте! Я — виртуальный консультант. Задайте вопрос о товарах, наличии, доставке или оформлении заказа.</div>
+                            </div>
+                            <div class="chatbot-input">
+                                <input type="text" id="chatbot-input" placeholder="Ваш вопрос...">
+                                <button id="chatbot-send">→</button>
+                            </div>
+                        </div>
+                    </div>
+                </span>
+            </div>
+            <div class="auth-buttons" id="auth-buttons">
+                <button class="btn" id="open-login">Вход</button>
+                <button class="btn" id="open-register">Регистрация</button>
+            </div>
+            <div class="mini-profile" id="mini-profile" style="display: none;">
+                <span class="profile-icon">👤</span>
+                <span class="profile-email" id="profile-email"></span>
+                <button class="btn" id="logout-btn" title="Выйти">⎋</button>
+            </div>
+            <div class="cart-container" id="cart-container">
+                <button class="cart-btn" id="open-cart" title="Корзина">
+                    🛒 <span class="cart-count" id="cart-count">0</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+    
+    <section class="hero">
+        <h1>Минимализм в каждой детали</h1>
+        <p>Качественные материалы, продуманный крой и сдержанная палитра — основа нашей философии</p>
+        <a href="#new" class="btn">Смотреть новинки</a>
+    </section>
+    
+    <h2 class="section-title" id="men">Мужская коллекция</h2>
+    
+    <div class="categories">
+        <button class="category-btn active">Вся одежда</button>
+        <button class="category-btn">Верх</button>
+        <button class="category-btn">Низ</button>
+        <button class="category-btn">Аксессуары</button>
+    </div>
+    
+    <div class="products">
+        <div class="product-card" 
+             data-title="Синий джемпер"
+             data-images='["https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=634&q=80","https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=634&q=80"]'
+             data-desc="Теплый джемпер насыщенного синего цвета. Состав: 80% шерсть, 20% полиамид."
+             data-sizes='["S","M","L"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=634&q=80');"></div>
+            <div class="product-info">
+                <h3 class="product-title">Синий джемпер</h3>
+                <p class="product-price">8 490 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <button class="btn add-to-cart" data-title="Синий джемпер" data-price="8490">В корзину</button>
+                    <button class="btn btn-details">Подробнее</button>
+                </div>
+            </div>
+        </div>
+        <div class="product-card" 
+             data-title="Белая рубашка Oversize"
+             data-images='["https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=634&q=80","https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=634&q=80"]'
+             data-desc="100% хлопок. Свободный крой. Классическая белая рубашка oversize для любого случая."
+             data-sizes='["S","M","L","XL"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=634&q=80');"></div>
+            <div class="product-info">
+                <h3 class="product-title">Белая рубашка Oversize</h3>
+                <p class="product-price">5 990 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <button class="btn add-to-cart" data-title="Белая рубашка Oversize" data-price="5990">В корзину</button>
+                    <button class="btn btn-details">Подробнее</button>
+                </div>
+            </div>
+        </div>
+        <div class="product-card" 
+             data-title="Брюки чинос"
+             data-images='["https://smartcasuals.ru/wp-content/uploads/2023/03/6-1670-2-1.jpg"]'
+             data-desc="Удобные брюки чинос классического кроя. Состав: 98% хлопок, 2% эластан."
+             data-sizes='["M","L","XL"]'>
+            <div class="product-image" style="background: #fff; position: relative;">
+                <img src="https://smartcasuals.ru/wp-content/uploads/2023/03/6-1670-2-1.jpg" alt="Брюки чинос" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;">
+                <!-- Крестик на всю карточку -->
+                <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                    <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                        <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <!-- маленький крестик в углу удалён -->
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">Брюки чинос</h3>
+                <p class="product-price">6 790 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <!-- <button class="btn add-to-cart" data-title="Брюки чинос" data-price="6790">В корзину</button> -->
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+        </div>
+        <div class="product-card" 
+             data-title="Пальто шерстяное"
+             data-images='["https://images.unsplash.com/photo-1526178613658-3f1622045557?auto=format&fit=crop&w=800&q=80","img/palto2.jpeg","img/palto3.jpeg"]'
+             data-desc="Элегантное пальто из шерсти мериноса. Закрывается на пуговицы. Цвет: темно-синий."
+             data-sizes='["S","M","L","XL"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1526178613658-3f1622045557?auto=format&fit=crop&w=800&q=80'); position: relative;">
+                <!-- Крестик на всю карточку пальто -->
+                <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                    <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                        <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <!-- маленький крестик в углу удалён -->
+                <div class="product-thumbs" style="position:absolute;bottom:8px;left:8px;display:flex;gap:6px;">
+                    <img src="https://images.unsplash.com/photo-1526178613658-3f1622045557?auto=format&fit=crop&w=800&q=80" alt="Пальто 1" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer;">
+                    <img src="img/palto2.jpeg" alt="Пальто 2" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer;">
+                    <img src="img/palto3.jpeg" alt="Пальто 3" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer;">
+                </div>
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">Пальто шерстяное</h3>
+                <p class="product-price">15 990 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <!-- <button class="btn add-to-cart" data-title="Пальто шерстяное" data-price="15990">В корзину</button> -->
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h2 class="section-title" id="women">Женская коллекция</h2>
+    
+    <div class="categories">
+        <button class="category-btn active">Вся одежда</button>
+        <button class="category-btn">Верх</button>
+        <button class="category-btn">Низ</button>
+        <button class="category-btn">Платья</button>
+    </div>
+    
+    <div class="products">
+        <div class="product-card" 
+             data-title="Белое платье-рубашка"
+             data-images='["https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80","https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=634&q=80"]'
+             data-desc="Легкое белое платье-рубашка из вискозы. Свободный крой, длинные рукава."
+             data-sizes='["S","M","L"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80'); position: relative;">
+                <!-- Крестик на всю карточку -->
+                <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                    <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                        <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <!-- маленький крестик в углу удалён -->
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">Белое платье-рубашка</h3>
+                <p class="product-price">7 490 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <!-- <button class="btn add-to-cart" data-title="Белое платье-рубашка" data-price="7490">В корзину</button> -->
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="product-card" 
+             data-title="Свитер крупной вязки"
+             data-images='["https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80","https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=634&q=80"]'
+             data-desc="Свитер крупной вязки из мягкой шерсти. Цвет: светло-серый."
+             data-sizes='["S","M","L","XL"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80'); position: relative;">
+                <!-- Крестик на всю карточку -->
+                <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                    <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                        <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <!-- маленький крестик в углу удалён -->
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">Свитер крупной вязки</h3>
+                <p class="product-price">9 990 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <!-- <button class="btn add-to-cart" data-title="Свитер крупной вязки" data-price="9990">В корзину</button> -->
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+        </div>
+        <div class="product-card" 
+             data-title="Юбка миди"
+             data-images='["https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80","https://images.unsplash.com/photo-1469398715555-76331a6c7c9b?auto=format&fit=crop&w=634&q=80"]'
+             data-desc="Стильная юбка миди из плотного трикотажа. Цвет: черный."
+             data-sizes='["S","M","L"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1469398715555-76331a6c7c9b?auto=format&fit=crop&w=634&q=80'); position: relative;">
+                <!-- Крестик на всю карточку -->
+                <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                    <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                        <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <!-- маленький крестик в углу удалён -->
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">Юбка миди</h3>
+                <p class="product-price">5 290 ₽</p>
+                <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+            </div>
+        </div>
+        
+        <div class="product-card" 
+             data-title="Костюм брючный"
+             data-images='["https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80","https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=634&q=80"]'
+             data-desc="Элегантный брючный костюм из шерсти. Цвет: темно-синий."
+             data-sizes='["S","M","L","XL"]'>
+            <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80'); position: relative;">
+                <!-- Крестик на всю карточку -->
+                <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                    <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                        <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <!-- маленький крестик в углу удалён -->
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">Костюм брючный</h3>
+                <p class="product-price">12 990 ₽</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0.5em;">
+                    <!-- <button class="btn add-to-cart" data-title="Костюм брючный" data-price="12990">В корзину</button> -->
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <section class="recommendations">
+        <h2 class="recommendation-title">Персональные рекомендации</h2>
+        <div class="products">
+            <div class="product-card">
+                <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=634&q=80');"></div>
+                <div class="product-info">
+                    <h3 class="product-title">Синий джемпер</h3>
+                    <p class="product-price">8 490 ₽</p>
+                    <button class="btn">В корзину</button>
+                    <button class="btn btn-details" onclick="document.querySelectorAll('.product-card[data-title=&quot;Синий джемпер&quot;] .btn-details')[0].click()">Подробнее</button>
+                </div>
+            </div>
+            <div class="product-card">
+                <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1517841905240-6745cdb1723f?auto=format&fit=crop&w=634&q=80'); position: relative;">
+                    <!-- Крестик на всю карточку юбка миди -->
+                    <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                        <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                            <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                            <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <!-- маленький крестик в углу удалён -->
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Юбка миди</h3>
+                    <p class="product-price">5 290 ₽</p>
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+            <div class="product-card">
+                <div class="product-image" style="background-image: url('https://images.unsplash.com/photo-1526178613658-3f1622045557?auto=format&fit=crop&w=800&q=80'); position: relative;">
+                    <!-- Крестик на всю карточку пальто -->
+                    <span style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;">
+                        <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" style="opacity:0.18;">
+                            <line x1="20" y1="20" x2="100" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                            <line x1="100" y1="20" x2="20" y2="100" stroke="#2b5876" stroke-width="10" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <!-- маленький крестик в углу удалён -->
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Пальто шерстяное</h3>
+                    <p class="product-price">15 990 ₽</p>
+                    <span style="color: #888; background: #f2f2f2; border-radius: 6px; padding: 7px 16px; font-size: 15px; font-weight: 500; border: none; cursor: not-allowed; display: inline-block;">Нет в наличии</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Чат-бот для посетителей -->
+    <!-- Удалено:
+    <div class="chatbot closed" id="chatbot-widget">
+        <div class="chatbot-header" id="chatbot-header" style="padding:7px 12px;display:flex;align-items:center;justify-content:space-between;background:var(--primary,#222);color:#fff;border-radius:16px 0 0 0;cursor:pointer;flex-shrink:0;min-height:36px;height:36px;">
+            <div class="chatbot-title" style="font-weight:600;font-size:15px;">Чат-бот консультант</div>
+            <button class="chatbot-toggle" id="chatbot-toggle-btn" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;">→</button>
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages" style="flex:1;min-height:0;overflow-y:auto;padding:8px 8px 0 8px;font-size:14px;">
+            <div class="message bot-message" style="margin-bottom:8px;background:#f2f2f2;padding:7px 10px;border-radius:8px;max-width:90%;">Здравствуйте! Я — виртуальный консультант. Задайте вопрос о товарах, наличии, доставке или оформлении заказа.</div>
+        </div>
+        <div class="chatbot-input" style="display:flex;gap:6px;padding:8px;flex-shrink:0;">
+            <input type="text" id="chatbot-input" placeholder="Ваш вопрос..." style="flex:1;padding:7px 9px;border-radius:6px;border:1px solid #ccc;font-size:14px;">
+            <button id="chatbot-send" style="padding:7px 12px;background:var(--primary,#222);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:15px;">→</button>
+        </div>
+        <button class="chatbot-fab" id="chatbot-fab" title="Открыть чат-бота" aria-label="Открыть чат-бота"
+            style="display:flex;align-items:center;justify-content:center;width:48px;height:48px;background:linear-gradient(135deg,#2b5876 0%,#4e4376 100%);border:none;border-radius:50%;cursor:pointer;position:absolute;top:3px;right:3px;transition:background 0.2s,box-shadow 0.2s,transform 0.18s;">
+            <span style="display:flex;align-items:center;justify-content:center;">
+                <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                    <circle cx="13" cy="13" r="13" fill="#fff" opacity="0.13"/>
+                    <path d="M8.5 12.5C8.5 10.567 10.067 9 12 9H14C15.933 9 17.5 10.567 17.5 12.5V15.5C17.5 17.433 15.933 19 14 19H12C10.067 19 8.5 17.433 8.5 15.5V12.5Z" stroke="#fff" stroke-width="1.5"/>
+                    <circle cx="11.5" cy="14" r="1" fill="#fff"/>
+                    <circle cx="13" cy="14" r="1" fill="#fff"/>
+                    <circle cx="14.5" cy="14" r="1" fill="#fff"/>
+                </svg>
+            </span>
+        </button>
+    </div>
+    -->
+    <footer>
+        <div class="footer-links">
+            <a href="#">Доставка</a>
+            <a href="#">Возврат</a>
+            <a href="#">Контакты</a>
+            <a href="#">О нас</a>
+        </div>
+        <p class="copyright">© 2023 Nordic Threads. Все права защищены.</p>
+    </footer>
+    
+    <!-- Модальное окно регистрации -->
+    <div class="modal" id="register-modal">
+        <div class="modal-content">
+            <span class="close" id="close-register">&times;</span>
+            <h2>Регистрация</h2>
+            <form id="register-form">
+                <input type="text" id="register-name" placeholder="Имя пользователя" required style="width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc;font-size:16px;">
+                <input type="email" id="register-email" placeholder="Email" required style="width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc;font-size:16px;">
+                <input type="password" id="register-password" placeholder="Пароль" required style="width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc;font-size:16px;">
+                <button type="submit" class="btn">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно входа -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <span class="close" id="close-login">&times;</span>
+            <h2>Вход</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Пароль" required>
+                <button type="submit" class="btn">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно корзины -->
+    <div class="modal" id="cart-modal">
+        <div class="modal-content cart-modal-content">
+            <span class="close" id="close-cart">&times;</span>
+            <h2>Корзина</h2>
+            <div id="cart-items"></div>
+            <div id="cart-total"></div>
+            <button class="btn" id="checkout-btn">Оформить заказ</button>
+            <form id="checkout-form" style="display:none; margin-top:25px;">
+                <h3 style="margin-bottom:15px;">Доставка</h3>
+                <input type="text" id="city" name="city" placeholder="Город" required>
+                <input type="text" id="street" name="street" placeholder="Улица" required>
+                <input type="text" id="house" name="house" placeholder="Дом / Квартира" required>
+                <input type="text" id="entrance" name="entrance" placeholder="Подъезд (если есть)">
+                <h3 style="margin:20px 0 10px;">Способ оплаты</h3>
+                <div class="payment-methods">
+                    <label><input type="radio" name="payment" value="card" required> Банковская карта</label>
+                    <label><input type="radio" name="payment" value="cash"> Наличные курьеру</label>
+                    <label><input type="radio" name="payment" value="sbp"> СБП</label>
+                </div>
+                <button type="submit" class="btn" style="margin-top:18px;">Подтвердить заказ</button>
+            </form>
+            <div id="checkout-success" style="display:none; color:var(--primary); margin-top:20px; text-align:center;">
+                Спасибо за заказ! Мы свяжемся с вами для подтверждения.
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно товара -->
+    <div class="modal" id="product-modal">
+        <div class="modal-content product-modal-content">
+            <span class="close" id="close-product-modal">&times;</span>
+            <div class="product-modal-gallery">
+                <button class="gallery-nav" id="gallery-prev">&#8592;</button>
+                <img id="product-modal-img" src="" alt="Фото товара">
+                <button class="gallery-nav" id="gallery-next">&#8594;</button>
+            </div>
+            <div class="product-modal-info">
+                <h2 id="product-modal-title"></h2>
+                <p id="product-modal-desc"></p>
+                <div class="product-modal-sizes">
+                    <label>Размер:
+                        <select id="product-modal-size"></select>
+                    </label>
+                </div>
+                <div class="product-modal-price" id="product-modal-price"></div>
+                <button class="btn" id="product-modal-add">В корзину</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/main.js"></script>
+    <script>
+    // --- Интеллектуальный чат-бот для посетителей ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatbot = document.getElementById('chatbot-widget');
+        const chatbotFab = document.getElementById('chatbot-fab');
+        const chatbotPopup = chatbot.querySelector('.chatbot-popup');
+        const chatbotToggle = document.getElementById('chatbot-toggle-btn');
+        const chatbotMessages = document.getElementById('chatbot-messages');
+        const chatbotInput = document.getElementById('chatbot-input');
+        const chatbotSend = document.getElementById('chatbot-send');
+
+        // Открытие чат-бота с плавной анимацией
+        if (chatbotFab) {
+            chatbotFab.onclick = function(e) {
+                chatbot.classList.add('open');
+                chatbot.classList.remove('closed');
+                chatbotPopup.style.display = 'flex';
+                chatbotPopup.style.opacity = '0';
+                chatbotPopup.style.transform = 'translateY(20px) scale(0.98)';
+                setTimeout(() => {
+                    chatbotPopup.style.opacity = '1';
+                    chatbotPopup.style.transform = 'translateY(0) scale(1)';
+                }, 10);
+                e.stopPropagation();
+            };
+        }
+        // Закрытие чат-бота
+        if (chatbotToggle) {
+            chatbotToggle.onclick = function(e) {
+                chatbotPopup.style.opacity = '0';
+                chatbotPopup.style.transform = 'translateY(20px) scale(0.98)';
+                setTimeout(() => {
+                    chatbot.classList.remove('open');
+                    chatbot.classList.add('closed');
+                    chatbotPopup.style.display = 'none';
+                }, 180);
+                e.stopPropagation();
+            };
+        }
+        // Закрытие по клику вне чат-бота
+        document.addEventListener('mousedown', function(e) {
+            if (
+                chatbot.classList.contains('open') &&
+                !chatbot.contains(e.target)
+            ) {
+                chatbotPopup.style.opacity = '0';
+                chatbotPopup.style.transform = 'translateY(20px) scale(0.98)';
+                setTimeout(() => {
+                    chatbot.classList.remove('open');
+                    chatbot.classList.add('closed');
+                    chatbotPopup.style.display = 'none';
+                }, 180);
+            }
+        });
+
+        // Отправка сообщения
+        function addMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender === 'bot' ? 'bot-message' : 'user-message');
+            messageDiv.textContent = text;
+            chatbotMessages.appendChild(messageDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+        function sendUserMessage() {
+            const userMessage = chatbotInput.value.trim();
+            if (userMessage) {
+                addMessage('user', userMessage);
+                chatbotInput.value = '';
+                setTimeout(() => {
+                    addMessage('bot', 'Спасибо за ваш вопрос! Мы скоро ответим.');
+                }, 1000);
+            }
+        }
+        if (chatbotSend) {
+            chatbotSend.onclick = sendUserMessage;
+        }
+        if (chatbotInput) {
+            chatbotInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') sendUserMessage();
+            });
+        }
+
+        // Мини-галерея для карточки "Пальто шерстяное"
+        document.querySelectorAll('.product-card[data-title="Пальто шерстяное"] .product-thumbs img').forEach(function(img) {
+            img.addEventListener('mouseenter', function() {
+                const main = img.closest('.product-image');
+                main.style.backgroundImage = `url('${img.src}')`;
+            });
+            img.addEventListener('mouseleave', function() {
+                const main = img.closest('.product-image');
+                main.style.backgroundImage = "url('img/palto1.jpeg')";
+            });
+        });
+    });
+    </script>
+</body>
+</html>
